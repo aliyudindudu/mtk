@@ -4,6 +4,8 @@ export interface PilihanGanda {
   pilihan: {
     [key: string]: string;
   };
+  kunci: string; // Tambahan: Jawaban benar (A/B/C/D/E)
+  pembahasan: string; // Tambahan: Penjelasan cara pengerjaan
   tabel?: {
     [key: string]: (string | number)[];
   };

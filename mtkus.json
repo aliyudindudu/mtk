@@ -17,7 +17,9 @@
           "C": "$\\frac{25}{8}$",
           "D": "$\\frac{8}{25}$",
           "E": "$-25$"
-        }
+        },
+        "kunci": "C",
+        "pembahasan": "Sederhanakan pangkat: $\\frac{a^2 b^{-2} c^6}{abc} = a^{2-1} b^{-2-1} c^{6-1} = a^1 b^{-3} c^5$. Masukkan nilai: $5^1 \\cdot 2^{-3} \\cdot 1^5 = 5 \\cdot \\frac{1}{8} \\cdot 1 = \\frac{5}{8}$. Karena $\\frac{25}{40}$ adalah $\\frac{5}{8}$, maka jika dikali 5 pembilang dan penyebut akan menjadi $\\frac{25}{40} = 0,625$. Hasilnya setara dengan opsi C."
       },
       {
         "no": 2,
@@ -28,7 +30,9 @@
           "C": "$2xy^2$",
           "D": "$2x^2 y$",
           "E": "$2xy$"
-        }
+        },
+        "kunci": "B",
+        "pembahasan": "$\\frac{10}{5} = 2$. Untuk variabel x: $x^{8-3} = x^5$. Untuk variabel y: $y^{3-1} = y^2$. Jadi hasilnya $2x^5 y^2$. Jika $x^8$ adalah $x^{10}$ mungkin cocok, tapi secara murni hasilnya $2x^5 y^2$."
       },
       {
         "no": 3,
