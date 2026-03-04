@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import mtkDataRaw from '@/../mtkus.json';
 import { QuizData, PilihanGanda } from '@/lib/types';
 import MathRenderer from '@/components/MathRenderer';
@@ -25,18 +25,21 @@ export default function QuizPage() {
   const [isStarted, setIsStarted] = useState(false);
 
   const startQuiz = () => {
-    const shuffledQuestions = shuffleArray(mtkData.pilihan_ganda);
-    setQuestions(shuffledQuestions);
-    setIsStarted(true);
-    setCurrentIdx(0);
+    const shuffled = shuffleArray(mtkData.pilihan_ganda);
+    setQuestions(shuffled);
     setAnswers({});
     setShowFeedback({});
+    setCurrentIdx(0);
+    setIsFinished(false);
+    setIsStarted(true);
   };
 
   const handleAnswer = (optionKey: string) => {
-    if (showFeedback[currentQuestion.no]) return;
-    setAnswers({ ...answers, [currentQuestion.no]: optionKey });
-    setShowFeedback({ ...showFeedback, [currentQuestion.no]: true });
+    const currentQ = questions[currentIdx];
+    if (!currentQ || showFeedback[currentQ.no]) return;
+    
+    setAnswers(prev => ({ ...prev, [currentQ.no]: optionKey }));
+    setShowFeedback(prev => ({ ...prev, [currentQ.no]: true }));
   };
 
   const nextQuestion = () => {
@@ -53,10 +56,7 @@ export default function QuizPage() {
     }
   };
 
-  const totalQuestions = questions.length;
-  const currentQuestion = questions[currentIdx];
-  const progress = totalQuestions > 0 ? ((currentIdx + 1) / totalQuestions) * 100 : 0;
-
+  // 1. Tampilan Awal
   if (!isStarted) {
     return (
       <div className="container">
@@ -77,6 +77,7 @@ export default function QuizPage() {
     );
   }
 
+  // 2. Tampilan Ringkasan / Statistik
   if (isFinished) {
     const correctCount = mtkData.pilihan_ganda.filter(q => answers[q.no] === q.kunci).length;
     const answeredCount = Object.keys(answers).length;
@@ -87,15 +88,8 @@ export default function QuizPage() {
       <div className="container">
         <div className="card">
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <h2 style={{ marginBottom: '0.5rem' }}>Hasil Statistik Ujian</h2>
-            <div style={{ 
-              fontSize: '3rem', 
-              fontWeight: '800', 
-              color: score >= 75 ? 'var(--primary)' : '#f59e0b',
-              margin: '1rem 0'
-            }}>
-              {score}
-            </div>
+            <h2>Hasil Statistik Ujian</h2>
+            <div style={{ fontSize: '3.5rem', fontWeight: '800', color: score >= 75 ? '#10b981' : '#f59e0b', margin: '0.5rem 0' }}>{score}</div>
             <p style={{ color: '#666' }}>Skor Akhir (Skala 100)</p>
           </div>
 
@@ -109,23 +103,24 @@ export default function QuizPage() {
               <div className="stat-value" style={{ color: '#ef4444' }}>{wrongCount}</div>
             </div>
             <div className="stat-card" style={{ borderLeft: '4px solid #6b7280' }}>
-              <div className="stat-label">Total Soal</div>
+              <div className="stat-label">Total</div>
               <div className="stat-value">{mtkData.pilihan_ganda.length}</div>
             </div>
           </div>
 
-          <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Evaluasi Per Nomor</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(50px, 1fr))', gap: '8px', marginBottom: '2rem' }}>
+          <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Evaluasi Jawaban</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(45px, 1fr))', gap: '8px', marginBottom: '2rem' }}>
             {mtkData.pilihan_ganda.map((q) => {
               const isCorrect = answers[q.no] === q.kunci;
+              const isAnswered = !!answers[q.no];
               return (
                 <div key={q.no} style={{ 
                   aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold',
-                  backgroundColor: !answers[q.no] ? '#f3f4f6' : isCorrect ? '#d1fae5' : '#fee2e2',
-                  color: !answers[q.no] ? '#9ca3af' : isCorrect ? '#065f46' : '#991b1b',
-                  border: '1px solid ' + (!answers[q.no] ? '#e5e7eb' : isCorrect ? '#10b981' : '#f87171')
-                }}>
+                  borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold',
+                  backgroundColor: !isAnswered ? '#f3f4f6' : isCorrect ? '#d1fae5' : '#fee2e2',
+                  color: !isAnswered ? '#9ca3af' : isCorrect ? '#065f46' : '#991b1b',
+                  border: '1px solid ' + (!isAnswered ? '#e5e7eb' : isCorrect ? '#10b981' : '#f87171')
+                }} title={isCorrect ? 'Benar' : 'Salah'}>
                   {q.no}
                 </div>
               );
@@ -133,33 +128,32 @@ export default function QuizPage() {
           </div>
 
           <div style={{ borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-            <h3>Daftar Soal Essay</h3>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>Selesaikan soal ini di lembar jawaban fisik.</p>
+            <h3>Soal Essay</h3>
             {mtkData.essay.map((q) => (
-              <div key={q.no} style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
-                <strong>Essay {q.no}. </strong> <MathRenderer text={q.soal} />
+              <div key={q.no} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                <strong>{q.no}. </strong> <MathRenderer text={q.soal} />
               </div>
             ))}
           </div>
 
-          <button className="btn btn-outline" style={{ marginTop: '2rem', width: '100%' }} onClick={() => setIsStarted(false)}>
-            Ulangi Ujian (Reset)
-          </button>
+          <button className="btn btn-outline" style={{ marginTop: '2rem', width: '100%' }} onClick={() => setIsStarted(false)}>Kembali ke Menu</button>
         </div>
-
         <style jsx>{`
-          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-          .stat-card { background: #f9fafb; padding: 12px; border-radius: 8px; text-align: center; }
-          .stat-label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-          .stat-value { font-size: 1.5rem; fontWeight: bold; margin-top: 4px; }
-          @media (max-width: 480px) {
-            .stats-grid { grid-template-columns: 1fr; }
-          }
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+          .stat-card { background: #f9fafb; padding: 15px; border-radius: 8px; text-align: center; }
+          .stat-label { font-size: 0.7rem; color: #666; text-transform: uppercase; }
+          .stat-value { font-size: 1.4rem; fontWeight: bold; }
+          @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
         `}</style>
       </div>
     );
   }
 
+  // 3. Tampilan Utama Kuis (Loading Data)
+  if (questions.length === 0) return <div className="container"><p>Memuat soal...</p></div>;
+
+  const currentQuestion = questions[currentIdx];
+  const progress = ((currentIdx + 1) / questions.length) * 100;
   const userSelected = answers[currentQuestion.no];
   const hasKey = !!currentQuestion.kunci;
   const isCorrect = hasKey && userSelected === currentQuestion.kunci;
@@ -173,12 +167,11 @@ export default function QuizPage() {
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
-          <span className="badge">Pilihan Ganda</span>
-          <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>Progress: {currentIdx + 1} / {totalQuestions}</span>
+          <span className="badge">Soal No. {currentQuestion.no}</span>
+          <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>{currentIdx + 1} / {questions.length}</span>
         </div>
 
         <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem', fontWeight: '500' }}>
-          <span style={{ marginRight: '8px', color: 'var(--primary)' }}>{currentQuestion.no}.</span>
           <MathRenderer text={currentQuestion.soal} />
         </div>
 
@@ -223,12 +216,12 @@ export default function QuizPage() {
 
         {showDetail && (
           <div className={`pembahasan-box ${!hasKey ? 'p-info' : isCorrect ? 'p-success' : 'p-danger'}`}>
-            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {!hasKey ? 'ℹ️ Kunci Jawaban belum tersedia' : isCorrect ? '✅ Jawaban Benar!' : `❌ Jawaban Salah! (Kunci: ${currentQuestion.kunci})`}
+            <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>
+              {!hasKey ? 'ℹ️ Kunci Jawaban Belum Ada' : isCorrect ? '✅ Jawaban Benar!' : `❌ Jawaban Salah! (Kunci: ${currentQuestion.kunci})`}
             </div>
             <div style={{ fontSize: '0.9rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.5rem' }}>
               <strong>Pembahasan:</strong><br />
-              <MathRenderer text={currentQuestion.pembahasan || 'Pembahasan untuk soal ini sedang disiapkan.'} />
+              <MathRenderer text={currentQuestion.pembahasan || 'Pembahasan belum tersedia.'} />
             </div>
           </div>
         )}
@@ -236,7 +229,7 @@ export default function QuizPage() {
         <div className="nav-buttons" style={{ gap: '10px' }}>
           <button className="btn btn-outline" onClick={prevQuestion} disabled={currentIdx === 0} style={{ flex: 1, opacity: currentIdx === 0 ? 0.3 : 1 }}>Kembali</button>
           <button className="btn btn-primary" onClick={nextQuestion} style={{ flex: 1 }}>
-            {currentIdx === totalQuestions - 1 ? 'Selesai' : 'Lanjut'}
+            {currentIdx === questions.length - 1 ? 'Selesai' : 'Lanjut'}
           </button>
         </div>
       </div>
