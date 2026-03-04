@@ -33,19 +33,14 @@ export default function QuizPage() {
     setShowFeedback({});
   };
 
-  const totalQuestions = questions.length;
-  const currentQuestion = questions[currentIdx];
-  const progress = totalQuestions > 0 ? ((currentIdx + 1) / totalQuestions) * 100 : 0;
-
   const handleAnswer = (optionKey: string) => {
-    if (showFeedback[currentQuestion.no]) return; // Cegah ganti jawaban setelah feedback muncul
-    
+    if (showFeedback[currentQuestion.no]) return;
     setAnswers({ ...answers, [currentQuestion.no]: optionKey });
     setShowFeedback({ ...showFeedback, [currentQuestion.no]: true });
   };
 
   const nextQuestion = () => {
-    if (currentIdx < totalQuestions - 1) {
+    if (currentIdx < questions.length - 1) {
       setCurrentIdx(currentIdx + 1);
     } else {
       setIsFinished(true);
@@ -58,6 +53,10 @@ export default function QuizPage() {
     }
   };
 
+  const totalQuestions = questions.length;
+  const currentQuestion = questions[currentIdx];
+  const progress = totalQuestions > 0 ? ((currentIdx + 1) / totalQuestions) * 100 : 0;
+
   if (!isStarted) {
     return (
       <div className="container">
@@ -69,7 +68,6 @@ export default function QuizPage() {
             <p><strong>Tanggal:</strong> {mtkData.ujian.tanggal}</p>
             <p><strong>Waktu:</strong> {mtkData.ujian.waktu}</p>
             <p style={{ marginTop: '1rem', fontStyle: 'italic', color: '#666' }}>{mtkData.ujian.catatan}</p>
-            <p style={{ marginTop: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>* Fitur: Feedback Instan & Pembahasan.</p>
           </div>
           <button className="btn btn-primary" style={{ width: '100%' }} onClick={startQuiz}>
             Mulai Ujian Sekarang
@@ -80,35 +78,84 @@ export default function QuizPage() {
   }
 
   if (isFinished) {
+    const correctCount = mtkData.pilihan_ganda.filter(q => answers[q.no] === q.kunci).length;
+    const answeredCount = Object.keys(answers).length;
+    const wrongCount = answeredCount - correctCount;
+    const score = Math.round((correctCount / mtkData.pilihan_ganda.length) * 100);
+
     return (
       <div className="container">
         <div className="card">
-          <h2 style={{ marginBottom: '1.5rem', fontSize: '1.25rem' }}>Hasil Ujian Anda</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: '8px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h2 style={{ marginBottom: '0.5rem' }}>Hasil Statistik Ujian</h2>
+            <div style={{ 
+              fontSize: '3rem', 
+              fontWeight: '800', 
+              color: score >= 75 ? 'var(--primary)' : '#f59e0b',
+              margin: '1rem 0'
+            }}>
+              {score}
+            </div>
+            <p style={{ color: '#666' }}>Skor Akhir (Skala 100)</p>
+          </div>
+
+          <div className="stats-grid">
+            <div className="stat-card" style={{ borderLeft: '4px solid #10b981' }}>
+              <div className="stat-label">Benar</div>
+              <div className="stat-value" style={{ color: '#10b981' }}>{correctCount}</div>
+            </div>
+            <div className="stat-card" style={{ borderLeft: '4px solid #ef4444' }}>
+              <div className="stat-label">Salah</div>
+              <div className="stat-value" style={{ color: '#ef4444' }}>{wrongCount}</div>
+            </div>
+            <div className="stat-card" style={{ borderLeft: '4px solid #6b7280' }}>
+              <div className="stat-label">Total Soal</div>
+              <div className="stat-value">{mtkData.pilihan_ganda.length}</div>
+            </div>
+          </div>
+
+          <h3 style={{ marginTop: '2rem', marginBottom: '1rem' }}>Evaluasi Per Nomor</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(50px, 1fr))', gap: '8px', marginBottom: '2rem' }}>
             {mtkData.pilihan_ganda.map((q) => {
               const isCorrect = answers[q.no] === q.kunci;
               return (
                 <div key={q.no} style={{ 
-                  padding: '8px', 
-                  border: '1px solid #eee', 
-                  borderRadius: '8px', 
-                  textAlign: 'center', 
-                  fontSize: '0.8rem',
-                  backgroundColor: isCorrect ? '#ecfdf5' : '#fef2f2'
+                  aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold',
+                  backgroundColor: !answers[q.no] ? '#f3f4f6' : isCorrect ? '#d1fae5' : '#fee2e2',
+                  color: !answers[q.no] ? '#9ca3af' : isCorrect ? '#065f46' : '#991b1b',
+                  border: '1px solid ' + (!answers[q.no] ? '#e5e7eb' : isCorrect ? '#10b981' : '#f87171')
                 }}>
-                  <strong>{q.no}</strong>
-                  <div style={{ color: isCorrect ? 'var(--primary)' : '#ef4444', fontWeight: 'bold' }}>
-                    {answers[q.no] || '-'}
-                  </div>
+                  {q.no}
                 </div>
               );
             })}
           </div>
-          
+
+          <div style={{ borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
+            <h3>Daftar Soal Essay</h3>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>Selesaikan soal ini di lembar jawaban fisik.</p>
+            {mtkData.essay.map((q) => (
+              <div key={q.no} style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>
+                <strong>Essay {q.no}. </strong> <MathRenderer text={q.soal} />
+              </div>
+            ))}
+          </div>
+
           <button className="btn btn-outline" style={{ marginTop: '2rem', width: '100%' }} onClick={() => setIsStarted(false)}>
-            Kembali ke Menu Utama
+            Ulangi Ujian (Reset)
           </button>
         </div>
+
+        <style jsx>{`
+          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+          .stat-card { background: #f9fafb; padding: 12px; border-radius: 8px; text-align: center; }
+          .stat-label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+          .stat-value { font-size: 1.5rem; fontWeight: bold; margin-top: 4px; }
+          @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -127,10 +174,11 @@ export default function QuizPage() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
           <span className="badge">Pilihan Ganda</span>
-          <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>No: {currentQuestion.no}</span>
+          <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 'bold' }}>Progress: {currentIdx + 1} / {totalQuestions}</span>
         </div>
 
         <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem', fontWeight: '500' }}>
+          <span style={{ marginRight: '8px', color: 'var(--primary)' }}>{currentQuestion.no}.</span>
           <MathRenderer text={currentQuestion.soal} />
         </div>
 
@@ -186,7 +234,7 @@ export default function QuizPage() {
         )}
 
         <div className="nav-buttons" style={{ gap: '10px' }}>
-          <button className="btn btn-outline" onClick={prevQuestion} disabled={currentIdx === 0} style={{ flex: 1 }}>Kembali</button>
+          <button className="btn btn-outline" onClick={prevQuestion} disabled={currentIdx === 0} style={{ flex: 1, opacity: currentIdx === 0 ? 0.3 : 1 }}>Kembali</button>
           <button className="btn btn-primary" onClick={nextQuestion} style={{ flex: 1 }}>
             {currentIdx === totalQuestions - 1 ? 'Selesai' : 'Lanjut'}
           </button>
@@ -206,6 +254,7 @@ export default function QuizPage() {
         .pembahasan-box { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; animation: fadeIn 0.3s ease; }
         .p-success { background-color: #ecfdf5; border: 1px solid #10b981; color: #065f46; }
         .p-danger { background-color: #fef2f2; border: 1px solid #f87171; color: #991b1b; }
+        .p-info { background-color: #eff6ff; border: 1px solid #60a5fa; color: #1e40af; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
