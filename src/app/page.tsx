@@ -114,7 +114,8 @@ export default function QuizPage() {
   }
 
   const userSelected = answers[currentQuestion.no];
-  const isCorrect = userSelected === currentQuestion.kunci;
+  const hasKey = !!currentQuestion.kunci;
+  const isCorrect = hasKey && userSelected === currentQuestion.kunci;
   const showDetail = showFeedback[currentQuestion.no];
 
   return (
@@ -151,10 +152,12 @@ export default function QuizPage() {
         <div className="grid-pilihan">
           {Object.entries(currentQuestion.pilihan).map(([key, value]) => {
             let statusClass = '';
-            if (showDetail) {
+            if (showDetail && hasKey) {
               if (key === currentQuestion.kunci) statusClass = 'correct-option';
               else if (key === userSelected) statusClass = 'wrong-option';
               else statusClass = 'disabled-option';
+            } else if (showDetail && !hasKey && key === userSelected) {
+              statusClass = 'selected-no-key';
             }
 
             return (
@@ -171,13 +174,13 @@ export default function QuizPage() {
         </div>
 
         {showDetail && (
-          <div className={`pembahasan-box ${isCorrect ? 'p-success' : 'p-danger'}`}>
+          <div className={`pembahasan-box ${!hasKey ? 'p-info' : isCorrect ? 'p-success' : 'p-danger'}`}>
             <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {isCorrect ? '✅ Jawaban Benar!' : `❌ Jawaban Salah! (Kunci: ${currentQuestion.kunci})`}
+              {!hasKey ? 'ℹ️ Kunci Jawaban belum tersedia' : isCorrect ? '✅ Jawaban Benar!' : `❌ Jawaban Salah! (Kunci: ${currentQuestion.kunci})`}
             </div>
             <div style={{ fontSize: '0.9rem', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '0.5rem' }}>
               <strong>Pembahasan:</strong><br />
-              <MathRenderer text={currentQuestion.pembahasan || 'Pembahasan belum tersedia untuk soal ini.'} />
+              <MathRenderer text={currentQuestion.pembahasan || 'Pembahasan untuk soal ini sedang disiapkan.'} />
             </div>
           </div>
         )}
